@@ -1,0 +1,1542 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Atlas of Women Writers / 女性作家世界图谱</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Cardo:ital,wght@0,400;0,700;1,400&family=Noto+Serif+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --paper:        #f4ede0;
+  --paper-deep:   #ebe1cd;
+  --ink:          #2b2620;
+  --ink-soft:     #5a4f43;
+  --rule:         #c8b89a;
+  --rule-soft:    #d9cdb3;
+  --accent:       #6b4226;        /* sepia */
+  --accent-deep:  #3e2613;
+  --moss:         #4a5d3a;
+  --highlight:    #9d2933;        /* deep cinnabar */
+  --shadow:       rgba(60,40,20,.10);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Cardo", "Noto Serif SC", "Songti SC", serif;
+  font-size: 15px;
+  line-height: 1.55;
+  font-feature-settings: "kern", "liga", "onum";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============ paper texture (subtle) ============ */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, transparent, rgba(80,50,20,.04) 100%),
+    repeating-linear-gradient(0deg, rgba(80,50,20,.012) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(90deg, rgba(80,50,20,.012) 0 2px, transparent 2px 4px);
+  pointer-events: none;
+  z-index: 1;
+}
+body::after {
+  content: "";
+  position: fixed; inset: 0;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.2  0 0 0 0 0.15  0 0 0 0 0.08  0 0 0 0.18 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/></svg>");
+  background-size: 220px 220px;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+  z-index: 2;
+}
+
+/* ============ layout ============ */
+.app {
+  position: relative;
+  height: 100vh;
+  width: 100vw;
+  display: grid;
+  grid-template-columns: 1fr;
+  z-index: 10;
+}
+
+/* top masthead */
+.masthead {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 22px 36px 18px 36px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  z-index: 30;
+  pointer-events: none;
+  border-bottom: 1px solid transparent;
+}
+.masthead > * { pointer-events: auto; }
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.brand .latin {
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 500;
+  font-style: italic;
+  font-size: 28px;
+  letter-spacing: 0.01em;
+  color: var(--accent-deep);
+  line-height: 1;
+}
+.brand .latin .amp {
+  font-style: italic;
+  color: var(--accent);
+  font-weight: 400;
+}
+.brand .zh {
+  font-family: "Noto Serif SC", serif;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.35em;
+  color: var(--ink-soft);
+  margin-left: 2px;
+}
+
+.masthead-meta {
+  text-align: right;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.masthead-meta .line { display: block; }
+.masthead-meta .count {
+  color: var(--accent);
+  font-weight: 400;
+}
+
+/* ============ globe canvas ============ */
+.stage {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  cursor: grab;
+}
+.stage.dragging { cursor: grabbing; }
+.stage canvas { display: block; }
+
+/* corner decoration / compass rose */
+.compass {
+  position: absolute;
+  left: 36px; bottom: 130px;
+  width: 78px; height: 78px;
+  z-index: 25;
+  opacity: 0.45;
+  pointer-events: none;
+}
+.legend {
+  position: absolute;
+  right: 36px; bottom: 130px;
+  z-index: 25;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  text-align: right;
+  line-height: 1.9;
+  opacity: 0.85;
+}
+@media (max-width: 720px) {
+  .legend { bottom: 180px; }
+}
+.legend .row { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.legend .dot {
+  width: 8px; height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--paper), 0 0 0 2px var(--accent);
+}
+.legend .dot.active { background: var(--highlight); box-shadow: 0 0 0 1px var(--paper), 0 0 0 2px var(--highlight); }
+
+/* ============ filter strip ============ */
+.filter-strip {
+  position: absolute;
+  top: 90px; left: 36px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 240px;
+}
+.filter-strip label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  display: block;
+  margin-bottom: 4px;
+}
+.search-wrap {
+  position: relative;
+}
+.search-wrap input {
+  width: 240px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  padding: 4px 0 6px 0;
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 14px;
+  color: var(--ink);
+  font-style: italic;
+  outline: none;
+  transition: border-color .2s;
+}
+.search-wrap input::placeholder {
+  color: var(--ink-soft);
+  font-style: italic;
+  opacity: 0.6;
+}
+.search-wrap input:focus {
+  border-bottom-color: var(--accent);
+}
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 6px;
+  margin-top: 4px;
+}
+.chip {
+  font-family: "Noto Serif SC", "Cardo", serif;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  padding: 2px 9px 3px 9px;
+  border: 1px solid var(--rule);
+  border-radius: 100px;
+  cursor: pointer;
+  background: transparent;
+  transition: all .18s;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.chip:hover { color: var(--accent-deep); border-color: var(--accent); }
+.chip.active {
+  color: var(--paper);
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+}
+
+/* ============ hover tooltip ============ */
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 50;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  box-shadow: 0 4px 14px var(--shadow);
+  padding: 8px 12px 9px 12px;
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 13px;
+  color: var(--ink);
+  opacity: 0;
+  transition: opacity .12s;
+  max-width: 280px;
+}
+.tooltip.show { opacity: 1; }
+.tooltip .t-title {
+  font-family: "Cormorant Garamond", "Noto Serif SC", serif;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--accent-deep);
+  margin-bottom: 1px;
+}
+.tooltip .t-author {
+  font-size: 12px;
+  color: var(--ink-soft);
+  letter-spacing: 0.03em;
+}
+.tooltip .t-meta {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ============ side card ============ */
+.card {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 460px;
+  background: var(--paper);
+  border-left: 1px solid var(--rule);
+  box-shadow: -2px 0 20px var(--shadow);
+  z-index: 40;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform .35s cubic-bezier(.6,.05,.3,.95);
+  padding: 30px 36px 60px 36px;
+}
+.card.open { transform: translateX(0); }
+
+.card::-webkit-scrollbar { width: 6px; }
+.card::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+
+.card .close {
+  position: absolute;
+  top: 18px; right: 22px;
+  width: 28px; height: 28px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+}
+.card .close:hover { color: var(--accent-deep); border-color: var(--accent); }
+
+.card .folio {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  margin-bottom: 18px;
+}
+.card .folio .sep { margin: 0 8px; color: var(--rule); }
+
+.card h1.title {
+  font-family: "Cormorant Garamond", "Noto Serif SC", serif;
+  font-weight: 500;
+  font-style: italic;
+  font-size: 30px;
+  line-height: 1.15;
+  color: var(--accent-deep);
+  margin-bottom: 8px;
+  letter-spacing: 0.005em;
+}
+.card .author-line {
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 15px;
+  color: var(--ink);
+  margin-bottom: 22px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.card .author-line .by {
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+.card .author-line .au {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.card .portrait {
+  width: 100%;
+  display: flex;
+  gap: 14px;
+  margin-bottom: 22px;
+  align-items: flex-start;
+}
+.card .portrait .img-wrap {
+  width: 110px;
+  height: 140px;
+  flex-shrink: 0;
+  background: var(--paper-deep);
+  border: 1px solid var(--rule);
+  position: relative;
+  overflow: hidden;
+}
+.card .portrait .img-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  filter: sepia(0.18) contrast(0.95) brightness(0.98);
+}
+.card .portrait .img-wrap.empty::before {
+  content: "no image"; /* avoid hardcoded fancy unicode */
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+.card .portrait .img-wrap.loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,.5) 50%, transparent 65%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer { 0% { background-position: 100% 0;} 100% { background-position: -100% 0;} }
+
+.card .portrait .bio {
+  flex: 1;
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+}
+.card .portrait .bio p { margin-bottom: 0.65em; }
+.card .portrait .bio p:last-child { margin-bottom: 0; }
+
+.section-rule {
+  height: 1px;
+  background: var(--rule-soft);
+  margin: 18px 0;
+  position: relative;
+}
+.section-rule::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px; height: 6px;
+  background: var(--accent);
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 1px;
+}
+
+.section h2 {
+  font-family: "Cormorant Garamond", "Noto Serif SC", serif;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.section .body {
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 14.5px;
+  line-height: 1.85;
+  color: var(--ink);
+  text-align: justify;
+  hyphens: auto;
+}
+.section .body p {
+  text-indent: 1.6em;
+  margin-bottom: 0.85em;
+}
+.section .body p:last-child { margin-bottom: 0; }
+.section .body p:first-child::first-letter {
+  font-family: "Cormorant Garamond", "Noto Serif SC", serif;
+  font-size: 1.05em;
+  color: var(--accent-deep);
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  font-size: 12.5px;
+  margin-top: 4px;
+}
+.meta-grid dt {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding-top: 4px;
+}
+.meta-grid dd {
+  font-family: "Cardo", "Noto Serif SC", serif;
+  color: var(--ink);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 6px;
+  margin-top: 6px;
+}
+.tags-wrap .tag {
+  font-family: "Noto Serif SC", "Cardo", serif;
+  font-size: 11.5px;
+  color: var(--accent-deep);
+  padding: 2px 9px;
+  border: 1px solid var(--rule);
+  background: var(--paper-deep);
+  border-radius: 100px;
+  line-height: 1.55;
+}
+
+.card-footer {
+  margin-top: 24px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--rule-soft);
+  padding-top: 12px;
+}
+.card-footer a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent);
+}
+.card-footer a:hover { color: var(--accent-deep); }
+
+/* ============ loading splash ============ */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  transition: opacity .6s;
+}
+.splash.gone { opacity: 0; pointer-events: none; }
+.splash .title {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 32px;
+  color: var(--accent-deep);
+}
+.splash .sub {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.splash .dots {
+  display: flex; gap: 6px;
+  margin-top: 6px;
+}
+.splash .dots span {
+  width: 5px; height: 5px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse 1.3s infinite;
+}
+.splash .dots span:nth-child(2) { animation-delay: .15s; }
+.splash .dots span:nth-child(3) { animation-delay: .30s; }
+@keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; }}
+
+/* ============ add-footprint button ============ */
+.add-footprint-btn {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-deep);
+  color: var(--paper);
+  border: none;
+  padding: 8px 14px 9px 12px;
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border-radius: 100px;
+  transition: all .18s;
+  box-shadow: 0 1px 0 rgba(60,40,20,.18);
+  font-variant: small-caps;
+}
+.add-footprint-btn:hover {
+  background: var(--accent);
+  transform: translateY(-1px);
+}
+.add-footprint-btn:active { transform: translateY(0); }
+.add-footprint-btn svg { flex-shrink: 0; }
+
+/* ============ pick-mode banner (top center) ============ */
+.pick-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 60;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  transform: translateY(-100%);
+  transition: transform .35s cubic-bezier(.6,.05,.3,.95);
+}
+.pick-banner.show { transform: translateY(0); }
+.pick-banner-inner {
+  pointer-events: auto;
+  margin-top: 20px;
+  background: var(--accent-deep);
+  color: var(--paper);
+  padding: 10px 8px 10px 16px;
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 13.5px;
+  box-shadow: 0 6px 22px rgba(60,40,20,.32);
+}
+.pick-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--highlight);
+  box-shadow: 0 0 0 4px rgba(157,41,51,.25);
+  animation: pickpulse 1.4s infinite;
+}
+@keyframes pickpulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(157,41,51,.25); }
+  50%      { box-shadow: 0 0 0 8px rgba(157,41,51,.05); }
+}
+.pick-cancel {
+  background: rgba(244,237,224,.15);
+  color: var(--paper);
+  border: none;
+  padding: 4px 12px 5px 12px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.pick-cancel:hover { background: rgba(244,237,224,.28); }
+
+.stage.picking { cursor: crosshair; }
+.stage.picking canvas { cursor: crosshair; }
+
+/* ============ form panel ============ */
+.form-panel {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 480px;
+  background: var(--paper);
+  border-left: 1px solid var(--rule);
+  box-shadow: -2px 0 20px var(--shadow);
+  z-index: 38;        /* below the detail card (40) */
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform .35s cubic-bezier(.6,.05,.3,.95);
+  padding: 30px 36px 60px 36px;
+}
+.form-panel.open { transform: translateX(0); }
+.form-panel::-webkit-scrollbar { width: 6px; }
+.form-panel::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+
+.form-panel .close {
+  position: absolute;
+  top: 18px; right: 22px;
+  width: 28px; height: 28px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+}
+.form-panel .close:hover { color: var(--accent-deep); border-color: var(--accent); }
+
+.form-panel .folio {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  margin-bottom: 18px;
+}
+.form-panel .title {
+  font-family: "Cormorant Garamond", "Noto Serif SC", serif;
+  font-weight: 500;
+  font-style: italic;
+  font-size: 26px;
+  line-height: 1.2;
+  color: var(--accent-deep);
+  margin-bottom: 8px;
+}
+.form-lede {
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  margin-bottom: 24px;
+  line-height: 1.65;
+}
+
+/* ============ form fields ============ */
+.form-section {
+  margin-bottom: 18px;
+}
+.form-section .lbl {
+  display: block;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+.form-section .req {
+  color: var(--highlight);
+  margin-left: 4px;
+}
+.form-section .hint {
+  display: block;
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  font-style: italic;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+.form-section input,
+.form-section textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  padding: 6px 0 7px 0;
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color .2s;
+  resize: vertical;
+  font-feature-settings: "kern", "liga";
+}
+.form-section input::placeholder,
+.form-section textarea::placeholder {
+  color: var(--ink-soft);
+  font-style: italic;
+  opacity: 0.45;
+}
+.form-section input:focus,
+.form-section textarea:focus {
+  border-bottom-color: var(--accent);
+}
+.form-section textarea {
+  border: 1px solid var(--rule);
+  padding: 8px 10px;
+  background: var(--paper-deep);
+  line-height: 1.6;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+/* ============ coordinate row ============ */
+.coord-section .coord-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.coord-row input {
+  width: 90px;
+  flex: 0 0 auto;
+}
+.pick-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent-deep);
+  padding: 6px 12px 7px 10px;
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 12.5px;
+  cursor: pointer;
+  border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all .15s;
+}
+.pick-btn:hover {
+  background: var(--accent-deep);
+  color: var(--paper);
+  border-color: var(--accent-deep);
+}
+.pick-btn.active {
+  background: var(--accent-deep);
+  color: var(--paper);
+}
+
+/* ============ image upload ============ */
+.image-drop {
+  position: relative;
+  width: 100%;
+  min-height: 130px;
+  background: var(--paper-deep);
+  border: 1px dashed var(--rule);
+  border-radius: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: all .15s;
+}
+.image-drop:hover { border-color: var(--accent); background: var(--paper-deep); }
+.image-drop.dragging { border-color: var(--accent); background: rgba(107,66,38,.08); }
+.image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 12px;
+  padding: 18px;
+}
+.image-placeholder .sub {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.image-drop img {
+  width: 100%;
+  height: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  display: block;
+}
+.image-remove {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 24px; height: 24px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+}
+.image-remove:hover {
+  color: var(--highlight);
+  border-color: var(--highlight);
+}
+
+/* ============ form actions ============ */
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule-soft);
+}
+.btn-primary, .btn-secondary {
+  padding: 8px 18px 9px 18px;
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all .15s;
+  font-variant: small-caps;
+}
+.btn-primary {
+  background: var(--accent-deep);
+  color: var(--paper);
+  border: 1px solid var(--accent-deep);
+}
+.btn-primary:hover { background: var(--accent); border-color: var(--accent); }
+.btn-secondary {
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--rule);
+}
+.btn-secondary:hover { color: var(--accent-deep); border-color: var(--accent); }
+
+.form-error {
+  margin-top: 12px;
+  color: var(--highlight);
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 12.5px;
+  font-style: italic;
+  text-align: right;
+  min-height: 1.4em;
+}
+
+/* ============ user entries list ============ */
+.user-entries {
+  margin-top: 30px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule-soft);
+}
+.user-entries-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 12px;
+}
+.text-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--accent);
+  padding: 0 0 1px 0;
+}
+.text-link:hover { color: var(--accent-deep); }
+.user-entries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.user-entries-list:empty::before {
+  content: "no entries yet · 暂无";
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  opacity: 0.5;
+}
+.user-entry-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--rule-soft);
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background .12s;
+}
+.user-entry-item:hover { background: var(--paper-deep); }
+.user-entry-item .dot {
+  width: 7px; height: 7px;
+  background: var(--moss);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.user-entry-item .meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.user-entry-item .t {
+  color: var(--accent-deep);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-entry-item .a {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-entry-item .del {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  opacity: 0;
+  transition: all .15s;
+}
+.user-entry-item:hover .del { opacity: 1; }
+.user-entry-item .del:hover { color: var(--highlight); }
+
+/* small screen */
+@media (max-width: 720px) {
+  .form-panel { width: 100%; }
+}
+
+/* ============ timeline slider ============ */
+.timeline {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 35;
+  width: min(720px, calc(100vw - 320px));
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  box-shadow: 0 4px 18px var(--shadow);
+  padding: 14px 20px 16px 20px;
+  border-radius: 4px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 14px;
+  align-items: center;
+}
+.timeline::before {
+  /* a printed marbled vignette at the corners */
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at top left, rgba(157,41,51,.04), transparent 40%),
+              radial-gradient(ellipse at bottom right, rgba(44,62,99,.04), transparent 40%);
+  border-radius: inherit;
+}
+
+.timeline-meta {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 2px;
+}
+.timeline-label {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.timeline-label .latin {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--accent-deep);
+}
+.timeline-label .zh {
+  font-family: "Noto Serif SC", serif;
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  color: var(--ink-soft);
+}
+.timeline-readout {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.year-now {
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--accent-deep);
+  letter-spacing: 0.01em;
+  font-variant-numeric: oldstyle-nums;
+  min-width: 60px;
+  text-align: right;
+}
+.year-detail {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+
+/* track */
+.timeline-track-wrap {
+  grid-column: 1;
+  grid-row: 2;
+  padding: 2px 8px 4px 8px;
+}
+.timeline-track {
+  position: relative;
+  height: 38px;
+  margin-top: 2px;
+}
+
+/* gradient bar — fills using a CSS background built from the palette */
+.timeline-gradient {
+  position: absolute;
+  left: 0; right: 0;
+  top: 17px;
+  height: 4px;
+  border-radius: 2px;
+  /* matches AtlasColorService palette */
+  background: linear-gradient(to right,
+    #2c3e63 0%,
+    #3a6379 20%,
+    #5b7a5e 42%,
+    #8a7a3e 62%,
+    #b8693a 80%,
+    #9d2933 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(60,40,20,.18), inset 0 -1px 0 rgba(255,255,255,.25);
+  opacity: 0.88;
+}
+
+/* tick marks: small lines + labels for key eras */
+.timeline-ticks {
+  position: absolute;
+  left: 0; right: 0;
+  top: 0; bottom: 0;
+  pointer-events: none;
+}
+.timeline-ticks .tick {
+  position: absolute;
+  top: 13px;
+  width: 1px;
+  height: 12px;
+  background: var(--ink-soft);
+  opacity: 0.45;
+  transform: translateX(-0.5px);
+}
+.timeline-ticks .tick.major { opacity: 0.7; height: 14px; top: 12px; }
+.timeline-ticks .label {
+  position: absolute;
+  top: 28px;
+  transform: translateX(-50%);
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 10px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+/* the actual range input — invisible but receives input */
+.timeline-track input[type="range"] {
+  position: absolute;
+  left: 0; right: 0;
+  top: 8px;
+  width: 100%;
+  height: 22px;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: grab;
+  z-index: 3;
+}
+.timeline-track input[type="range"]:active { cursor: grabbing; }
+.timeline-track input[type="range"]:focus { outline: none; }
+
+/* hide native thumb so we can draw our own */
+.timeline-track input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 22px; height: 22px;
+  background: transparent; border: 0; cursor: grab;
+}
+.timeline-track input[type="range"]::-moz-range-thumb {
+  width: 22px; height: 22px;
+  background: transparent; border: 0; cursor: grab;
+}
+.timeline-track input[type="range"]::-webkit-slider-runnable-track {
+  background: transparent; height: 22px; border: 0;
+}
+.timeline-track input[type="range"]::-moz-range-track {
+  background: transparent; height: 22px; border: 0;
+}
+
+/* the visible handle, positioned via JS */
+.timeline-handle {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 38px;
+  transform: translateX(-50%);
+  pointer-events: none;   /* the input above receives drags */
+  z-index: 2;
+}
+.timeline-handle-stick {
+  width: 2px;
+  height: 100%;
+  background: var(--accent-deep);
+  position: absolute;
+  left: 50%; top: 0;
+  transform: translateX(-50%);
+  box-shadow: 0 0 0 1px var(--paper);
+}
+.timeline-handle-flame {
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 14px;
+  background: radial-gradient(circle at 50% 60%, #ffd07a 0%, #d97a3a 40%, #9d2933 80%, transparent 100%);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  filter: blur(.5px);
+  animation: flame-flicker 1.4s ease-in-out infinite alternate;
+}
+@keyframes flame-flicker {
+  from { transform: translateX(-50%) scale(.92, 1.0); opacity: .85; }
+  to   { transform: translateX(-50%) scale(1.05, 1.12); opacity: 1; }
+}
+
+/* reset button */
+.timeline-reset {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--ink-soft);
+  padding: 6px 12px 7px 10px;
+  font-family: "Cardo", "Noto Serif SC", serif;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.timeline-reset:hover { color: var(--accent-deep); border-color: var(--accent); }
+
+@media (max-width: 720px) {
+  .timeline { width: calc(100vw - 32px); grid-template-columns: 1fr; }
+  .timeline-reset { grid-column: 1; grid-row: 3; justify-self: end; margin-top: -2px; }
+}
+
+/* small screen — keep but limit */
+@media (max-width: 720px) {
+  .card { width: 100%; }
+  .filter-strip { max-width: 60vw; }
+  .compass { display: none; }
+  .masthead { padding: 16px 20px; }
+  .filter-strip { left: 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="splash" id="splash">
+  <div class="title">Atlas of Women Writers</div>
+  <div class="sub">Loading the world &middot; 加载中</div>
+  <div class="dots"><span></span><span></span><span></span></div>
+</div>
+
+<div class="app">
+
+  <header class="masthead">
+    <div class="brand">
+      <div class="latin">Atlas <span class="amp">of</span> Women Writers</div>
+      <div class="zh">女 性 作 家 世 界 图 谱</div>
+    </div>
+    <div class="masthead-meta">
+      <span class="line"><span class="count" id="count">0</span> works · <span id="countries">0</span> regions</span>
+      <span class="line">a cartography of voices</span>
+    </div>
+  </header>
+
+  <div class="filter-strip">
+    <div>
+      <label>Search · 检索</label>
+      <div class="search-wrap">
+        <input id="search" type="text" placeholder="anything · 书名 / 作者 / 主题 / 地点 / 年代 / 标签…" />
+      </div>
+    </div>
+    <div>
+      <label>Region · 大洲</label>
+      <div class="tag-chips" id="region-chips"></div>
+    </div>
+    <button class="add-footprint-btn" id="open-add-btn">
+      <svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4">
+        <path d="M10 4 v12 M4 10 h12" stroke-linecap="round"/>
+      </svg>
+      <span>添加足迹 · add a footprint</span>
+    </button>
+  </div>
+
+  <main class="stage" id="stage"></main>
+
+  <!-- decorative compass -->
+  <svg class="compass" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="42" fill="none" stroke="#5a4f43" stroke-width="0.6"/>
+    <circle cx="50" cy="50" r="34" fill="none" stroke="#5a4f43" stroke-width="0.4"/>
+    <g stroke="#5a4f43" stroke-width="0.5">
+      <line x1="50" y1="6" x2="50" y2="94"/>
+      <line x1="6" y1="50" x2="94" y2="50"/>
+      <line x1="19" y1="19" x2="81" y2="81" stroke-width="0.3"/>
+      <line x1="81" y1="19" x2="19" y2="81" stroke-width="0.3"/>
+    </g>
+    <polygon points="50,12 53,50 50,46 47,50" fill="#6b4226"/>
+    <polygon points="50,88 53,50 50,54 47,50" fill="#5a4f43" opacity="0.5"/>
+    <text x="50" y="5" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-size="6" fill="#3e2613">N</text>
+    <text x="50" y="99" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-size="6" fill="#5a4f43">S</text>
+    <text x="1" y="52" font-family="Cormorant Garamond" font-style="italic" font-size="6" fill="#5a4f43">W</text>
+    <text x="93" y="52" font-family="Cormorant Garamond" font-style="italic" font-size="6" fill="#5a4f43">E</text>
+  </svg>
+
+  <div class="legend">
+    <div class="row"><span>data point · 数据点</span><span class="dot"></span></div>
+    <div class="row"><span>selected · 选中</span><span class="dot active"></span></div>
+  </div>
+
+  <div class="tooltip" id="tooltip">
+    <div class="t-title" id="tt-title"></div>
+    <div class="t-author" id="tt-author"></div>
+    <div class="t-meta" id="tt-meta"></div>
+  </div>
+
+  <!-- selection mode banner -->
+  <div class="pick-banner" id="pick-banner">
+    <div class="pick-banner-inner">
+      <span class="pick-dot"></span>
+      <span class="pick-text">点击地球任意位置 · click anywhere on the globe</span>
+      <button class="pick-cancel" id="pick-cancel">cancel · 取消</button>
+    </div>
+  </div>
+
+  <aside class="form-panel" id="form-panel">
+    <button class="close" id="close-form" title="close">×</button>
+    <div class="folio">add footprint · 添加足迹</div>
+    <h1 class="title" id="form-heading">A new entry on the atlas</h1>
+    <p class="form-lede">填写一本你想加入图谱的作品。所有字段都可空缺,但建议至少有书名、作者与坐标。</p>
+
+    <form id="footprint-form" autocomplete="off">
+
+      <div class="form-section">
+        <label class="lbl">书名 · title <span class="req">*</span></label>
+        <input type="text" name="title" required placeholder="例:傲慢与偏见 / Pride and Prejudice"/>
+      </div>
+
+      <div class="form-section">
+        <label class="lbl">作者 · author <span class="req">*</span></label>
+        <input type="text" name="author" required placeholder="例:Jane Austen"/>
+      </div>
+
+      <div class="form-section">
+        <label class="lbl">作者简介 · author bio</label>
+        <textarea name="author_bio" rows="3" placeholder="约 100 字"></textarea>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-section">
+          <label class="lbl">写作地点 · writing place</label>
+          <input type="text" name="writing_location" placeholder="London, England"/>
+        </div>
+        <div class="form-section">
+          <label class="lbl">国籍 · nationality</label>
+          <input type="text" name="nationality" placeholder="United Kingdom"/>
+        </div>
+        <div class="form-section">
+          <label class="lbl">活跃城市 · active city</label>
+          <input type="text" name="active_city" placeholder="London"/>
+        </div>
+        <div class="form-section">
+          <label class="lbl">年份 · year</label>
+          <input type="number" name="year" placeholder="1813" min="-3000" max="2100"/>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <label class="lbl">领域 · field</label>
+        <input type="text" name="field" placeholder="文学/小说"/>
+      </div>
+
+      <div class="form-section">
+        <label class="lbl">内容简介 · synopsis</label>
+        <textarea name="summary" rows="5" placeholder="约 300 字的剧情或主旨概述"></textarea>
+      </div>
+
+      <div class="form-section">
+        <label class="lbl">标签 · tags</label>
+        <input type="text" name="tags" placeholder="女性主义; 19世纪; 婚姻"/>
+        <span class="hint">用分号或逗号分隔</span>
+      </div>
+
+      <!-- coordinate picker -->
+      <div class="form-section coord-section">
+        <label class="lbl">坐标 · coordinates <span class="req">*</span></label>
+        <div class="coord-row">
+          <input type="number" name="lat" id="form-lat" step="0.0001" min="-90" max="90" placeholder="lat"/>
+          <input type="number" name="lon" id="form-lon" step="0.0001" min="-180" max="180" placeholder="lon"/>
+          <button type="button" class="pick-btn" id="pick-on-globe-btn">
+            <svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4">
+              <circle cx="10" cy="8.5" r="3.2"/>
+              <path d="M10 1.5 c-3.8 0-6.5 2.8-6.5 6.5 0 5 6.5 10.5 6.5 10.5 s6.5-5.5 6.5-10.5 c0-3.7-2.7-6.5-6.5-6.5z"/>
+            </svg>
+            <span>在地球上选点</span>
+          </button>
+        </div>
+        <span class="hint" id="coord-hint">填入数字或在地球上点击</span>
+      </div>
+
+      <!-- image -->
+      <div class="form-section">
+        <label class="lbl">作者照片 / 封面 · image</label>
+        <div class="image-upload" id="image-upload">
+          <input type="file" id="image-input" accept="image/*" hidden/>
+          <div class="image-drop" id="image-drop">
+            <div class="image-placeholder" id="image-placeholder">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.2">
+                <rect x="3" y="5" width="18" height="14" rx="1"/>
+                <circle cx="9" cy="11" r="2"/>
+                <path d="M3 17 l5-5 4 4 3-3 6 6"/>
+              </svg>
+              <span>点击或拖入图片 · click or drop</span>
+              <span class="sub">≤ 500KB · 自动压缩</span>
+            </div>
+            <img id="image-preview" alt="" style="display:none"/>
+            <button type="button" class="image-remove" id="image-remove" style="display:none">×</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" id="form-cancel">cancel · 取消</button>
+        <button type="submit" class="btn-primary">save · 保存</button>
+      </div>
+
+      <div class="form-error" id="form-error"></div>
+
+    </form>
+
+    <!-- user entries listing -->
+    <div class="user-entries">
+      <div class="user-entries-head">
+        <span>your footprints · 已添加 <span id="user-count">0</span></span>
+        <button type="button" id="clear-all-btn" class="text-link">clear all</button>
+      </div>
+      <div class="user-entries-list" id="user-entries-list"></div>
+    </div>
+  </aside>
+
+  <aside class="card" id="card">
+    <button class="close" id="close-card" title="close">×</button>
+    <div class="folio" id="folio"></div>
+    <h1 class="title" id="c-title"></h1>
+    <div class="author-line">
+      <span class="by">by</span><span class="au" id="c-author"></span>
+    </div>
+
+    <div class="portrait">
+      <div class="img-wrap empty" id="c-img-wrap"><img id="c-img" alt="" style="display:none"/></div>
+      <div class="bio" id="c-bio"></div>
+    </div>
+
+    <div class="section-rule"></div>
+
+    <div class="section">
+      <h2>Synopsis · 内容简介</h2>
+      <p class="body" id="c-summary"></p>
+    </div>
+
+    <div class="section-rule"></div>
+
+    <div class="section">
+      <h2>Particulars · 详情</h2>
+      <dl class="meta-grid">
+        <dt>field</dt><dd id="c-field"></dd>
+        <dt>year</dt><dd id="c-year"></dd>
+        <dt>writing place</dt><dd id="c-writing-loc"></dd>
+        <dt>active in</dt><dd id="c-active"></dd>
+        <dt>nationality</dt><dd id="c-nat"></dd>
+        <dt>coordinates</dt><dd id="c-coord"></dd>
+      </dl>
+    </div>
+
+    <div class="section-rule"></div>
+
+    <div class="section">
+      <h2>Tags · 标签</h2>
+      <div class="tags-wrap" id="c-tags"></div>
+    </div>
+
+    <div class="card-footer">
+      <span id="c-folio-bottom"></span>
+      <a id="c-wiki" href="#" target="_blank" rel="noopener">Wikipedia →</a>
+    </div>
+  </aside>
+
+  <!-- ============ TIMELINE SLIDER ============ -->
+  <div class="timeline" id="timeline">
+    <div class="timeline-meta">
+      <div class="timeline-label">
+        <span class="latin">a river of time</span>
+        <span class="zh">历 史 长 河</span>
+      </div>
+      <div class="timeline-readout">
+        <span class="year-now" id="year-now">—</span>
+        <span class="year-detail" id="year-detail">all works visible</span>
+      </div>
+    </div>
+    <div class="timeline-track-wrap">
+      <div class="timeline-track" id="timeline-track">
+        <!-- tick marks and labels populated by JS -->
+        <div class="timeline-ticks" id="timeline-ticks"></div>
+        <!-- gradient bar that mirrors the color service -->
+        <div class="timeline-gradient" id="timeline-gradient"></div>
+        <!-- the actual range input, transparent, overlaid -->
+        <input
+          type="range" id="timeline-slider"
+          min="-700" max="2026" step="1" value="2026"
+          aria-label="timeline year selector"
+        />
+        <!-- visual handle that mirrors the input's value -->
+        <div class="timeline-handle" id="timeline-handle">
+          <div class="timeline-handle-flame"></div>
+          <div class="timeline-handle-stick"></div>
+        </div>
+      </div>
+    </div>
+    <button class="timeline-reset" id="timeline-reset" type="button" title="reset to present">
+      <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.4">
+        <path d="M3 8a5 5 0 1 0 1.5-3.5" stroke-linecap="round"/>
+        <path d="M3 3v3h3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>present · 至今</span>
+    </button>
+  </div>
+
+</div>
+
+<!-- libs -->
+<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="color-service.js"></script>
+<script src="vine.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
