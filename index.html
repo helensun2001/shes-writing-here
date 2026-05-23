@@ -164,6 +164,56 @@ body::after {
   .legend { bottom: 180px; }
 }
 .legend .row { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+
+/* ============ music toggle ============ */
+/* Tiny ambient-audio control. Positioned bottom-left, above the
+ * compass, so it stays clear of the timeline and the search bar.
+ * Two SVG icons (on/off) live inside the button; CSS toggles which
+ * is visible based on the [data-muted] attribute the JS sets. */
+.music-toggle {
+  position: absolute;
+  left: 36px; bottom: 220px;     /* above the compass */
+  z-index: 26;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px var(--shadow);
+  transition: all .2s;
+  opacity: 0.75;
+}
+.music-toggle:hover {
+  color: var(--accent-deep);
+  border-color: var(--accent);
+  opacity: 1;
+  transform: scale(1.05);
+}
+.music-toggle .ico-off { display: none; }
+.music-toggle[data-muted="true"] .ico-on  { display: none; }
+.music-toggle[data-muted="true"] .ico-off { display: block; color: var(--ink-soft); opacity: 0.6; }
+/* a subtle pulse ring while music plays (data-muted="false") */
+.music-toggle[data-muted="false"]::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  opacity: 0;
+  animation: music-pulse 2.4s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes music-pulse {
+  0%   { transform: scale(0.95); opacity: 0.45; }
+  100% { transform: scale(1.20); opacity: 0; }
+}
+@media (max-width: 720px) {
+  .music-toggle { bottom: 270px; }
+}
 .legend .dot {
   width: 8px; height: 8px;
   background: var(--accent);
@@ -1311,6 +1361,36 @@ body::after {
     <div class="row"><span>data point · 数据点</span><span class="dot"></span></div>
     <div class="row"><span>selected · 选中</span><span class="dot active"></span></div>
   </div>
+
+  <!-- ============ AMBIENT MUSIC ============ -->
+  <!-- The audio element loops indefinitely. Browsers block autoplay
+       with sound, so we wait for the user's first interaction with
+       the page (drag/click/keypress) and call play() then. The button
+       toggles mute/unmute, with state persisted to localStorage so
+       repeat visits remember the preference. -->
+  <audio id="bg-music" loop preload="auto">
+    <!-- Drop your own music file into the atlas/ folder and update the
+         filename below. MP3 is most broadly supported; OGG works in
+         Firefox/Chrome but not Safari. -->
+    <source src="music.mp3" type="audio/mpeg">
+    <source src="music.ogg" type="audio/ogg">
+  </audio>
+  <button class="music-toggle" id="music-toggle" type="button"
+          title="toggle background music · 切换背景音乐"
+          aria-label="toggle background music">
+    <!-- speaker-on icon (default state) -->
+    <svg class="ico-on" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+      <path d="M15.5 8.5a4 4 0 0 1 0 7"/>
+      <path d="M18.5 5.5a8 8 0 0 1 0 13"/>
+    </svg>
+    <!-- speaker-muted icon -->
+    <svg class="ico-off" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+      <line x1="22" y1="9" x2="16" y2="15"/>
+      <line x1="16" y1="9" x2="22" y2="15"/>
+    </svg>
+  </button>
 
   <div class="tooltip" id="tooltip">
     <div class="t-title" id="tt-title"></div>

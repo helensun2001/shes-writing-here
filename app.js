@@ -472,6 +472,48 @@ async function loadLandLines() {
 }
 loadLandLines();
 
+// Country borders (political): drawn slightly above coastlines with a
+// fainter, cooler tone. Natural Earth 110m simplified — about 250KB,
+// 240+ countries. Polygons are decomposed into line loops.
+async function loadCountryBorders() {
+  const candidates = [
+    "https://raw.githubusercontent.com/martynafford/natural-earth-geojson/master/110m/cultural/ne_110m_admin_0_countries.json",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
+  ];
+  for (const url of candidates) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = await res.json();
+      const mat = new THREE.LineBasicMaterial({
+        color: 0x8a7e6c, transparent: true, opacity: 0.30,
+      });
+      const r = GLOBE_R * 1.0011;   // slightly above the coastline (1.001)
+      const grp = new THREE.Group();
+      for (const f of data.features) {
+        const geom = f.geometry;
+        // each country may be Polygon or MultiPolygon; we just need the rings
+        const polys = geom.type === "Polygon" ? [geom.coordinates] :
+                      geom.type === "MultiPolygon" ? geom.coordinates : [];
+        for (const poly of polys) {
+          // poly = [outerRing, hole1, hole2, ...]; we draw all rings
+          for (const ring of poly) {
+            const pts = ring.map(([lon, lat]) => latLonToVec3(lat, lon, r));
+            const g = new THREE.BufferGeometry().setFromPoints(pts);
+            grp.add(new THREE.Line(g, mat));
+          }
+        }
+      }
+      globe.add(grp);
+      return;  // first successful source wins
+    } catch (e) {
+      // try next
+    }
+  }
+  console.warn("country borders unavailable from any source");
+}
+loadCountryBorders();
+
 // (4) faint outer halo
 const haloGeo = new THREE.SphereGeometry(GLOBE_R * 1.06, 64, 32);
 const haloMat = new THREE.MeshBasicMaterial({
@@ -497,25 +539,40 @@ const pointGeo = new THREE.SphereGeometry(0.008, 12, 12);
 const hotColor  = new THREE.Color(0x9d2933);  // cinnabar — hover/active
 const userTint  = new THREE.Color(0x4a5d3a);  // moss — user-added (a subtle base tint)
 
-/* glow halo sprite (shared geometry, per-point material so each has own opacity).
- * We build a radial-gradient canvas once and reuse the texture. */
-function makeGlowTexture() {
+/* Halo textures — two layers per point for richer, softer edges:
+ *   - inner: bright concentrated core that fades fast (like an ember)
+ *   - outer: very faint wide aura that bleeds into the paper (like ink)
+ * We render the inner over the outer with additive blending so colors
+ * intermingle naturally. */
+function makeGlowTexture(stops) {
   const size = 128;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext("2d");
   const grd = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
-  grd.addColorStop(0.00, "rgba(255,255,255,1)");
-  grd.addColorStop(0.25, "rgba(255,255,255,.85)");
-  grd.addColorStop(0.55, "rgba(255,255,255,.30)");
-  grd.addColorStop(1.00, "rgba(255,255,255,0)");
+  for (const [t, color] of stops) grd.addColorStop(t, color);
   ctx.fillStyle = grd;
   ctx.fillRect(0, 0, size, size);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace || tex.colorSpace;
   return tex;
 }
-const glowTex = makeGlowTexture();
+// inner: bright core, narrow falloff
+const glowTexInner = makeGlowTexture([
+  [0.00, "rgba(255,255,255,1)"],
+  [0.18, "rgba(255,255,255,.78)"],
+  [0.45, "rgba(255,255,255,.22)"],
+  [0.85, "rgba(255,255,255,.02)"],
+  [1.00, "rgba(255,255,255,0)"],
+]);
+// outer: very faint wide aura, like ink bleeding into paper
+const glowTexOuter = makeGlowTexture([
+  [0.00, "rgba(255,255,255,.32)"],
+  [0.25, "rgba(255,255,255,.22)"],
+  [0.55, "rgba(255,255,255,.10)"],
+  [0.85, "rgba(255,255,255,.02)"],
+  [1.00, "rgba(255,255,255,0)"],
+]);
 
 /* Color resolution per book:
  *   - Built-in works:  AtlasColorService maps year → temperature color
@@ -550,23 +607,48 @@ function rebuildPoints() {
     globe.remove(p.mesh);
     globe.remove(p.stalk);
     if (p.halo) globe.remove(p.halo);
+    if (p.aura) globe.remove(p.aura);
   }
   SCENE_POINTS = [];
 
   BOOKS.forEach((b, idx) => {
-    const c = colorFor(b);
+    const baseC = colorFor(b);
 
-    // core dot
-    const mat = new THREE.MeshBasicMaterial({ color: c.clone() });
+    // per-point hue/value jitter — small but enough so 109 points don't
+    // look identically minted. Seeded by the book so it's stable.
+    const seed = (Math.abs(hashStr(b.title + b.author)) % 10000) / 10000;
+    const hsl = { h: 0, s: 0, l: 0 };
+    baseC.getHSL(hsl);
+    hsl.h = (hsl.h + (seed - 0.5) * 0.04 + 1) % 1;          // ±0.02 hue
+    hsl.l = Math.max(0.10, Math.min(0.85, hsl.l + (seed - 0.5) * 0.10));  // ±0.05 light
+    const c = new THREE.Color().setHSL(hsl.h, hsl.s, hsl.l);
+
+    // core dot — small and opaque-ish; the halos do most of the visual work
+    const mat = new THREE.MeshBasicMaterial({ color: c.clone(), transparent: true });
     const m = new THREE.Mesh(pointGeo, mat);
     const v = latLonToVec3(b.lat, b.lon, POINT_R);
     m.position.copy(v);
     m.userData.idx = idx;
     globe.add(m);
 
-    // halo sprite for pulse
+    // outer aura — very faint wide bleed, gives the ink-on-paper feel
+    const auraMat = new THREE.SpriteMaterial({
+      map: glowTexOuter,
+      color: c.clone(),
+      transparent: true,
+      opacity: 0.32,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    const aura = new THREE.Sprite(auraMat);
+    aura.position.copy(v);
+    aura.scale.set(0.13, 0.13, 1);
+    aura.userData.idx = idx;
+    globe.add(aura);
+
+    // inner halo — concentrated breathing ember
     const haloMat = new THREE.SpriteMaterial({
-      map: glowTex,
+      map: glowTexInner,
       color: c.clone(),
       transparent: true,
       opacity: 0.55,
@@ -582,13 +664,15 @@ function rebuildPoints() {
     // little stalk
     const innerV = latLonToVec3(b.lat, b.lon, GLOBE_R * 1.0005);
     const lineGeo = new THREE.BufferGeometry().setFromPoints([innerV, v]);
-    const lineMat = new THREE.LineBasicMaterial({ color: c.getHex(), transparent: true, opacity: 0.35 });
+    const lineMat = new THREE.LineBasicMaterial({ color: c.getHex(), transparent: true, opacity: 0.30 });
     const stalk = new THREE.Line(lineGeo, lineMat);
     globe.add(stalk);
 
     SCENE_POINTS.push({
-      mesh: m, halo, haloMat, stalk, mat, lineMat,
+      mesh: m, halo, haloMat, aura, auraMat, stalk, mat, lineMat,
       book: b, idx, visible: true,
+      // store the jittered color so hover-out restores to the right tint
+      jitterColor: c.clone(),
       // pulse phase per book (so they don't all breathe in sync)
       pulsePhase: (Math.abs(hashStr(b.title + b.author)) % 1000) / 1000 * Math.PI * 2,
       // alive flag: dimmed by the timeline if year > slider value
@@ -635,6 +719,7 @@ function applyFilter() {
     p.mesh.visible = visible && p.alive !== false;
     p.stalk.visible = visible && p.alive !== false;
     if (p.halo) p.halo.visible = visible && p.alive !== false;
+    if (p.aura) p.aura.visible = visible && p.alive !== false;
   }
   // if the currently-hovered point became hidden, retract its vine
   if (hoverIdx !== -1 && SCENE_POINTS[hoverIdx] && !SCENE_POINTS[hoverIdx].visible) {
@@ -719,18 +804,23 @@ function updateHoverHighlight() {
   for (const p of SCENE_POINTS) {
     const isHover = p.idx === hoverIdx;
     const isActive = p.idx === activeIdx;
-    const base = colorFor(p.book);
+    // for hover-out, restore to the per-point jittered color (richer
+    // than the un-jittered baseline from colorFor)
+    const base = p.jitterColor || colorFor(p.book);
     if (isActive) {
       p.mat.color.copy(hotColor);
       if (p.haloMat) p.haloMat.color.copy(hotColor);
+      if (p.auraMat) p.auraMat.color.copy(hotColor);
       p.mesh.scale.setScalar(1.8);
     } else if (isHover) {
       p.mat.color.copy(hotColor);
       if (p.haloMat) p.haloMat.color.copy(hotColor);
+      if (p.auraMat) p.auraMat.color.copy(hotColor);
       p.mesh.scale.setScalar(1.5);
     } else {
       p.mat.color.copy(base);
       if (p.haloMat) p.haloMat.color.copy(base);
+      if (p.auraMat) p.auraMat.color.copy(base);
       p.mesh.scale.setScalar(1.0);
     }
   }
@@ -923,12 +1013,31 @@ STAGE.addEventListener("wheel", (e) => {
   zoom = Math.max(1.6, Math.min(5.5, zoom));
 }, { passive: false });
 
-// rotate target so a (lat, lon) faces the camera
+// rotate target so a (lat, lon) faces the camera.
+//
+// Camera sits at (0, 0, +z) looking at origin. The globe is rotated
+// in order Rx * Ry (default three.js euler order), so a point at local
+// position v ends up at world position Rx(rotX) * Ry(rotY) * v.
+//
+// Deriving the angles by solving Rx*Ry*v = (0,0,r):
+//   v_local(lat,lon) = ( r cos(lat)cos(lon), r sin(lat), -r cos(lat)sin(lon) )
+//   target.rotY = -(lon + 90)°  in radians   ← brings the meridian to face camera
+//   target.rotX = lat°           in radians   ← tilts to the right parallel
 function rotateGlobeTo(lat, lon) {
-  // we rotate the globe group so the point is at (0,0,positive z) from cam
-  // globe.rotation.y = -lon° - 90°  (rough), then rotation.x = lat°
-  target.rotY = -lon * Math.PI / 180;
-  target.rotX = lat * Math.PI / 180;
+  let ty = -(lon * Math.PI / 180) - Math.PI / 2;
+  const tx =  (lat * Math.PI / 180);
+
+  // ease takes the shortest angular path: normalize ty so it's within
+  // π of the current rotY (otherwise easing might unwind the long way)
+  const TAU = Math.PI * 2;
+  while (ty - globe.rotation.y >  Math.PI) ty -= TAU;
+  while (ty - globe.rotation.y < -Math.PI) ty += TAU;
+
+  target.rotY = ty;
+  target.rotX = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, tx));
+  // pause autospin so the move is visible
+  auto = false;
+  lastUserAt = performance.now();
 }
 
 // ---------- animate ----------
@@ -1044,8 +1153,11 @@ function animate() {
     // breathing: gentle sine modulation per-point phase
     const phase = p.pulsePhase || 0;
     const breath = 0.5 + 0.5 * Math.sin(tNow * 1.4 + phase);  // 0..1
-    const baseScale  = 0.040;  // smallest halo
-    const peakScale  = 0.072;  // largest halo
+    // aura breathes slower and phase-shifted, giving a layered shimmer
+    const auraBreath = 0.5 + 0.5 * Math.sin(tNow * 0.9 + phase * 1.3 + 1.1);
+
+    const baseScale  = 0.040;
+    const peakScale  = 0.072;
     const baseAlpha  = 0.28;
     const peakAlpha  = 0.62;
 
@@ -1058,6 +1170,14 @@ function animate() {
     p.halo.scale.set(s, s, 1);
     p.haloMat.opacity = a;
 
+    // outer aura: larger scale, much lower opacity, breathes independently
+    if (p.aura && p.auraMat) {
+      const auraS = (0.105 + 0.045 * auraBreath) * heat;
+      const auraA = (0.16 + 0.18 * auraBreath) * p.currentVisible;
+      p.aura.scale.set(auraS, auraS, 1);
+      p.auraMat.opacity = auraA;
+    }
+
     // core dot subtle pulse: ±8%
     const dotScale = (isHot ? p.mesh.scale.x : (0.92 + 0.16 * breath));
     if (!isHot) p.mesh.scale.setScalar(dotScale);
@@ -1068,13 +1188,14 @@ function animate() {
       p.mat.opacity = p.currentVisible;
     }
     if (p.lineMat) {
-      p.lineMat.opacity = 0.35 * p.currentVisible;
+      p.lineMat.opacity = 0.30 * p.currentVisible;
     }
     // when fully faded, also hide hard (raycaster won't pick it)
     const reallyVisible = p.visible && p.currentVisible > 0.04;
     p.mesh.visible  = reallyVisible;
     p.stalk.visible = reallyVisible;
     p.halo.visible  = reallyVisible;
+    if (p.aura) p.aura.visible = reallyVisible;
   }
 
   // ---- ink-wash effects (year-crossing reactions) ----
@@ -1661,5 +1782,111 @@ TIMELINE_SLIDER.addEventListener("pointerdown", () => {
 // initial paint
 syncHandle();
 applyTimeline();
+
+/* =========================================================
+ *  AMBIENT MUSIC
+ *
+ *  Browser autoplay policy blocks audio.play() until the user
+ *  interacts with the page. So:
+ *    1) on first pointerdown/keydown/wheel, attempt play().
+ *    2) provide a toggle button so the user can mute/unmute.
+ *    3) persist preference to localStorage so it sticks across visits.
+ *    4) start at a gentle 35% volume so it's atmospheric, not loud.
+ * ========================================================= */
+(function setupMusic() {
+  const audio  = document.getElementById("bg-music");
+  const button = document.getElementById("music-toggle");
+  if (!audio || !button) {
+    console.warn("[music] audio or button element not found in DOM");
+    return;
+  }
+
+  const STORAGE_KEY = "atlas:music-muted";
+  audio.volume = 0.35;
+  audio.loop = true;
+
+  // ---- diagnostic logging ----
+  // We print every meaningful state change to the console with a [music]
+  // prefix, so the user can paste them back if anything goes wrong.
+  function log(...args) { console.log("[music]", ...args); }
+  function warn(...args) { console.warn("[music]", ...args); }
+
+  // Source-level errors don't bubble to <audio>. Listen on each <source>
+  // to catch 404s, MIME mismatches, codec errors, etc.
+  for (const src of audio.querySelectorAll("source")) {
+    src.addEventListener("error", () => {
+      warn("source failed to load:", src.src, "type:", src.type);
+    });
+  }
+
+  // The audio element fires `error` only when ALL sources have failed.
+  audio.addEventListener("error", () => {
+    const err = audio.error;
+    const codes = { 1: "ABORTED", 2: "NETWORK", 3: "DECODE", 4: "SRC_NOT_SUPPORTED" };
+    warn("audio element error:", err ? `${err.code} (${codes[err.code]||"?"})` : "(no detail)");
+    warn("→ no audio source could be loaded. check that music.mp3 exists in the same folder as index.html and is a valid MP3.");
+    button.style.display = "none";
+  });
+
+  audio.addEventListener("loadedmetadata", () => {
+    log(`loaded, duration ≈ ${audio.duration.toFixed(1)}s, src=${audio.currentSrc}`);
+  });
+  audio.addEventListener("play",  () => log("playing"));
+  audio.addEventListener("pause", () => log("paused"));
+  audio.addEventListener("stalled", () => warn("stalled (data not arriving)"));
+
+  // ---- initial muted state ----
+  const storedMuted = (() => {
+    try { return localStorage.getItem(STORAGE_KEY) === "true"; }
+    catch { return false; }
+  })();
+  let muted = storedMuted;
+  audio.muted = muted;
+  button.setAttribute("data-muted", String(muted));
+  log("init, stored mute pref =", muted);
+
+  // ---- play attempt ----
+  let started = false;
+  function tryStart(why) {
+    if (started) return;
+    if (!audio.paused) { started = true; return; }
+    log("attempting play(), trigger =", why);
+    const p = audio.play();
+    if (p && typeof p.then === "function") {
+      p.then(() => {
+        started = true;
+        log("play() resolved — music is rolling");
+      }).catch((err) => {
+        warn("play() rejected:", err && err.message ? err.message : err);
+        warn("→ this usually means autoplay is still blocked. Try clicking the music button directly.");
+      });
+    }
+  }
+
+  // ---- first user gesture unlocks autoplay ----
+  function onFirstGesture(e) {
+    log("first user gesture:", e.type);
+    tryStart(e.type);
+    window.removeEventListener("pointerdown", onFirstGesture, true);
+    window.removeEventListener("keydown",     onFirstGesture, true);
+    window.removeEventListener("wheel",       onFirstGesture, true);
+    window.removeEventListener("touchstart",  onFirstGesture, true);
+  }
+  window.addEventListener("pointerdown", onFirstGesture, true);
+  window.addEventListener("keydown",     onFirstGesture, true);
+  window.addEventListener("wheel",       onFirstGesture, true);
+  window.addEventListener("touchstart",  onFirstGesture, true);
+
+  // ---- toggle button ----
+  button.addEventListener("click", (e) => {
+    e.stopPropagation();
+    muted = !muted;
+    audio.muted = muted;
+    button.setAttribute("data-muted", String(muted));
+    try { localStorage.setItem(STORAGE_KEY, String(muted)); } catch {}
+    log("toggle clicked, muted now =", muted);
+    if (!muted) tryStart("button-click");
+  });
+})();
 
 })();
